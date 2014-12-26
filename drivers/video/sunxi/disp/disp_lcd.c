@@ -648,8 +648,32 @@ LCD_get_sys_config(__u32 sel, __disp_lcd_cfg_t *lcd_cfg)
 }
 
 
-void
-LCD_OPEN_FUNC(__u32 sel, LCD_FUNC func, __u32 delay)
+
+void LCD_delay_us(__u32 us) 
+{
+volatile __u32 time;
+//#ifdef __LINUX_OSAL__
+        udelay(us);
+//#endif
+//#ifdef __BOOT_OSAL__
+        
+        for(time = 0; time < (us*700/10);time++);//assume cpu runs at 700Mhz,10 clock one cycle
+//#endif
+}
+
+void LCD_delay_ms(__u32 ms) 
+{
+//#ifdef __LINUX_OSAL__
+        __u32 timeout = ms*HZ/1000;
+        set_current_state(TASK_INTERRUPTIBLE);
+        schedule_timeout(timeout);
+//#endif
+#ifdef __BOOT_OSAL__
+        wBoot_timer_delay(ms);//assume cpu runs at 1000Mhz,10 clock one cycle
+#endif
+}
+
+void LCD_OPEN_FUNC(__u32 sel, LCD_FUNC func, __u32 delay)
 {
 	open_flow[sel].func[open_flow[sel].func_num].func = func;
 	open_flow[sel].func[open_flow[sel].func_num].delay = delay;
@@ -1304,9 +1328,6 @@ __u32 tv_mode_to_width(__disp_tv_mode_t mode)
 	case DISP_TV_MOD_H1360_V768_60HZ:
 		width = 1360;
 		break;
-	case DISP_TV_MOD_H1366_V768_60HZ:
-		width = 1366;
-		break;
 	case DISP_TV_MOD_1080I_50HZ:
 	case DISP_TV_MOD_1080I_60HZ:
 	case DISP_TV_MOD_1080P_24HZ:
@@ -1355,7 +1376,6 @@ __u32 tv_mode_to_height(__disp_tv_mode_t mode)
 		height = 720;
 		break;
 	case DISP_TV_MOD_H1360_V768_60HZ:
-	case DISP_TV_MOD_H1366_V768_60HZ:
 		height = 768;
 		break;
 	case DISP_TV_MOD_H1280_V1024_60HZ:
