@@ -165,9 +165,6 @@ static irqreturn_t sunxi_rtc_alarmirq(int irq, void *id)
 {
 	struct rtc_device *rdev = id;
 	u32 val;
-
-	printk("%s %s %d\n",__FILE__,__func__,__LINE__);
-    /*judge the int is whether ours*/
     val = readl(sunxi_rtc_base + SUNXI_ALARM_INT_STATUS_REG)&(RTC_ENABLE_WK_IRQ | RTC_ENABLE_CNT_IRQ);
     if (val) {
 		/*Clear pending count alarm*/
