@@ -874,6 +874,11 @@ config  TOUCHSCREEN_SUN4I_TS
        help
            sun4i-ts touchscreen driver
 
+config TOUCHSCREEN_GSLX680
+       tristate  "CSLX680 touchscreen driver"
+       help
+          GSLX680 touchscreen driver
+
 config TOUCHSCREEN_FT5X_TS
        tristate  "ft5x touchscreen driver"
        help

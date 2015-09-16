@@ -77,4 +77,7 @@ obj-$(CONFIG_TOUCHSCREEN_GT818)         += gt818_ts.o
 obj-$(CONFIG_TOUCHSCREEN_ZT8031)         += zt8031.o
 obj-$(CONFIG_TOUCHSCREEN_COASIA)         += coasia_i2c.o
 obj-$(CONFIG_TOUCHSCREEN_SUN4I_TS)         += sun4i-ts.o
+obj-$(CONFIG_TOUCHSCREEN_GSLX680)       += gslX680.o
+gslX680-objs := gslX680_ts.o gsl_point_id.o
+
 
