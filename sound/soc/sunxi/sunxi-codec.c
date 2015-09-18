@@ -33,6 +33,11 @@
 #include "sunxi-codec.h"
 #include <plat/sys_config.h>
 #include <mach/system.h>
+#include <linux/gpio.h>
+#include <linux/irq.h>
+#include <asm/irq.h>
+#include <mach/irqs.h>
+#include <linux/interrupt.h>
 
 #define SCRIPT_AUDIO_OK (0)
 static int has_playback, has_capture;
@@ -43,6 +48,8 @@ static volatile unsigned int capture_dmasrc = 0;
 static volatile unsigned int capture_dmadst = 0;
 static volatile unsigned int play_dmasrc = 0;
 static volatile unsigned int play_dmadst = 0;
+int headset_int = 6;
+int headset_irqnum = 0;
 
 /* Structure/enum declaration ------------------------------- */
 typedef struct codec_board_info {
@@ -383,8 +390,9 @@ static int codec_play_open(struct snd_pcm_substream *substream)
 
 static int codec_capture_open(void)
 {
-	 //enable mic1 pa
+	printk("Sam test, function=%s,line=%d\n",__FUNCTION__,__LINE__);
 	 codec_wr_control(SUNXI_ADC_ACTL, 0x1, MIC1_EN, 0x1);
+
 	 //mic1 gain 32dB
 	 codec_wr_control(SUNXI_ADC_ACTL, 0x3,25,0x1);
 	  //enable VMIC
@@ -437,6 +445,8 @@ static int codec_play_stop(void)
 
 static int codec_capture_start(void)
 {
+	printk("Sam test, function=%s,line=%d\n",__FUNCTION__,__LINE__);
+ 	
 	//enable adc drq
 	if (gpio_pa_shutdown)
 		gpio_write_one_pin_value(gpio_pa_shutdown, 1, "audio_pa_ctrl");
@@ -446,6 +456,7 @@ static int codec_capture_start(void)
 
 static int codec_capture_stop(void)
 {
+	printk("Sam test, function=%s,line=%d\n",__FUNCTION__,__LINE__);
 	//disable adc drq
 	codec_wr_control(SUNXI_ADC_FIFOC ,0x1, ADC_DRQ, 0x0);
 	//enable mic1 pa
@@ -1448,6 +1459,25 @@ static void codec_resume_events(struct work_struct *work)
 	}
 }
 
+static irqreturn_t headset_detect_handler(int irq,void *dev_id)
+{
+	printk("Sam test irq\n");
+	unsigned int status;
+
+	status = gpio_get_value(headset_int);
+	if (status == 1) {
+                codec_wr_control(SUNXI_ADC_ACTL, 0x3, 17, 0x2);
+		printk("plug out  \n");
+
+	}
+	else if (status == 0) {
+                codec_wr_control(SUNXI_ADC_ACTL, 0x2, 17, 0x3);
+		printk("plug in \n");
+	}
+	return IRQ_HANDLED;
+
+}
+
 static int __devinit sunxi_codec_probe(struct platform_device *pdev)
 {
 	int err;
@@ -1543,7 +1573,21 @@ static int __devinit sunxi_codec_probe(struct platform_device *pdev)
 	 }
 
 	 kfree(db);
+
+
+	int ret_det = gpio_request(headset_int,"gpio_pin_6");
+	if(ret_det < 0) {
+        	printk("headset_int request failed");
+	
+	}
+        headset_irqnum = gpio_to_irq(headset_int);	
+
+        ret = request_irq(headset_irqnum,headset_detect_handler,IRQF_TRIGGER_FALLING|IRQF_TRIGGER_RISING,"detect_headset",0);
+	if (ret < 0) {
+		printk("headset detect irq request failed\n");
+	}
 	 gpio_pa_shutdown = gpio_request_ex("audio_para", "audio_pa_ctrl");
+
 	if (gpio_pa_shutdown)
 		gpio_write_one_pin_value(gpio_pa_shutdown, 0, "audio_pa_ctrl");
 	 codec_init();
