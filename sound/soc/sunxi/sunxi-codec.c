@@ -38,8 +38,16 @@
 #include <asm/irq.h>
 #include <mach/irqs.h>
 #include <linux/interrupt.h>
+#include <linux/workqueue.h>
+
 
 #define SCRIPT_AUDIO_OK (0)
+
+struct work_struct  headset_detect;
+static struct workqueue_struct *headset_detect_queue;
+
+static int headset_state = 0;
+
 static int has_playback, has_capture;
 static int gpio_pa_shutdown = 0;
 struct clk *codec_apbclk,*codec_pll2clk,*codec_moduleclk;
@@ -391,7 +399,8 @@ static int codec_play_open(struct snd_pcm_substream *substream)
 static int codec_capture_open(void)
 {
 	printk("Sam test, function=%s,line=%d\n",__FUNCTION__,__LINE__);
-	 codec_wr_control(SUNXI_ADC_ACTL, 0x1, MIC1_EN, 0x1);
+        codec_wr_control(SUNXI_ADC_ACTL, 0x1, MIC1_EN, 0x1);
+	codec_wr_control(SUNXI_ADC_ACTL, 0x1, MIC2_EN, 0x1);
 
 	 //mic1 gain 32dB
 	 codec_wr_control(SUNXI_ADC_ACTL, 0x3,25,0x1);
@@ -459,8 +468,9 @@ static int codec_capture_stop(void)
 	printk("Sam test, function=%s,line=%d\n",__FUNCTION__,__LINE__);
 	//disable adc drq
 	codec_wr_control(SUNXI_ADC_FIFOC ,0x1, ADC_DRQ, 0x0);
-	//enable mic1 pa
-	codec_wr_control(SUNXI_ADC_ACTL, 0x1, MIC1_EN, 0x0);
+	//enable mic1  or mic2 pa
+        codec_wr_control(SUNXI_ADC_ACTL, 0x1, MIC1_EN, 0x1);
+	codec_wr_control(SUNXI_ADC_ACTL, 0x1, MIC2_EN, 0x1);
 
 	//enable VMIC
 	codec_wr_control(SUNXI_ADC_ACTL, 0x1, VMIC_EN, 0x0);
@@ -1458,21 +1468,30 @@ static void codec_resume_events(struct work_struct *work)
 		gpio_write_one_pin_value(gpio_pa_shutdown, 1, "audio_pa_ctrl");
 	}
 }
-
-static irqreturn_t headset_detect_handler(int irq,void *dev_id)
+static void headset_switch_work(struct work_struct *work)
 {
-	printk("Sam test irq\n");
 	unsigned int status;
 
 	status = gpio_get_value(headset_int);
 	if (status == 1) {
                 codec_wr_control(SUNXI_ADC_ACTL, 0x3, 17, 0x2);
-		printk("plug out  \n");
+		printk("headset plug out  \n");
 
 	}
 	else if (status == 0) {
                 codec_wr_control(SUNXI_ADC_ACTL, 0x2, 17, 0x3);
-		printk("plug in \n");
+		printk("hedset plug in \n");
+	}
+
+
+}
+
+
+static irqreturn_t headset_detect_handler(int irq,void *dev_id)
+{
+	printk("Sam test irq\n");
+	if(0 == queue_work(headset_detect_queue,&headset_detect)){
+		printk("[headset detect ]add work struct ");
 	}
 	return IRQ_HANDLED;
 
@@ -1482,6 +1501,7 @@ static int __devinit sunxi_codec_probe(struct platform_device *pdev)
 {
 	int err;
 	int ret;
+	int status;
 	struct snd_card *card;
 	struct sunxi_codec *chip;
 	struct codec_board_info  *db;
@@ -1575,6 +1595,9 @@ static int __devinit sunxi_codec_probe(struct platform_device *pdev)
 	 kfree(db);
 
 
+        INIT_WORK(&headset_detect, headset_switch_work);
+	headset_detect_queue = create_singlethread_workqueue("headset_detect");
+
 	int ret_det = gpio_request(headset_int,"gpio_pin_6");
 	if(ret_det < 0) {
         	printk("headset_int request failed");
@@ -1586,6 +1609,10 @@ static int __devinit sunxi_codec_probe(struct platform_device *pdev)
 	if (ret < 0) {
 		printk("headset detect irq request failed\n");
 	}
+        codec_wr_control(SUNXI_ADC_ACTL, 0x3, 17, 0x2);
+        codec_wr_control(SUNXI_ADC_ACTL, 0x2, 17, 0x3);
+
+
 	 gpio_pa_shutdown = gpio_request_ex("audio_para", "audio_pa_ctrl");
 
 	if (gpio_pa_shutdown)
