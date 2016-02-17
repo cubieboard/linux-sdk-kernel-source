@@ -95,7 +95,7 @@ static const struct usb_device_id id_table[] = {
 	{ }					/* Terminating entry */
 };
 
-MODULE_DEVICE_TABLE(usb, id_table);
+//MODULE_DEVICE_TABLE(usb, id_table);
 
 static struct usb_driver pl2303_driver = {
 	.name =		"pl2303",
