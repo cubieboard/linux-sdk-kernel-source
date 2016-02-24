@@ -443,6 +443,13 @@ config SONYPI
 	  To compile this driver as a module, choose M here: the
 	  module will be called sonypi.
 
+config POWER_3G
+	tristate "SUNXI:CubieAIO board Power on 3G/4G GPIO"
+        depends on GPIO_SUNXI
+	---help---
+	   This is a simple driver to pull up one gpio to power on 3G/4G for
+           CubieAIO board		
+
 config GPIO_TB0219
 	tristate "TANBAC TB0219 GPIO support"
 	depends on TANBAC_TB022X
