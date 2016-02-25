@@ -398,7 +398,6 @@ static int codec_play_open(struct snd_pcm_substream *substream)
 
 static int codec_capture_open(void)
 {
-	printk("Sam test, function=%s,line=%d\n",__FUNCTION__,__LINE__);
         codec_wr_control(SUNXI_ADC_ACTL, 0x1, MIC1_EN, 0x1);
 	codec_wr_control(SUNXI_ADC_ACTL, 0x1, MIC2_EN, 0x1);
 
@@ -454,7 +453,6 @@ static int codec_play_stop(void)
 
 static int codec_capture_start(void)
 {
-	printk("Sam test, function=%s,line=%d\n",__FUNCTION__,__LINE__);
  	
 	//enable adc drq
 	if (gpio_pa_shutdown)
@@ -465,7 +463,6 @@ static int codec_capture_start(void)
 
 static int codec_capture_stop(void)
 {
-	printk("Sam test, function=%s,line=%d\n",__FUNCTION__,__LINE__);
 	//disable adc drq
 	codec_wr_control(SUNXI_ADC_FIFOC ,0x1, ADC_DRQ, 0x0);
 	//enable mic1  or mic2 pa
@@ -1489,7 +1486,6 @@ static void headset_switch_work(struct work_struct *work)
 
 static irqreturn_t headset_detect_handler(int irq,void *dev_id)
 {
-	printk("Sam test irq\n");
 	if(0 == queue_work(headset_detect_queue,&headset_detect)){
 		printk("[headset detect ]add work struct ");
 	}
